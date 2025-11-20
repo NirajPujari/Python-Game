@@ -2,11 +2,11 @@
 import os
 
 # Game grid
-N = 4
+N = 5
 
 # Window size
-WINDOW_SIZE = 500
-SPACING = 12
+WINDOW_SIZE = 620
+SPACING = 14
 
 # Assets path
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))

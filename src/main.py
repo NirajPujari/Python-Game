@@ -1,4 +1,3 @@
-# main.py
 import pygame
 from pygame.locals import *
 from gameLogic import GameLogic
@@ -13,22 +12,27 @@ KEY_TO_MOVE = {
 
 def main():
     game = GameLogic()
-    render = Renderer(game)
+    renderer = Renderer(game)
 
     running = True
     show_game_over = False
     show_win = False
+    animating = False
 
     while running:
-        render.draw_board()
+        renderer.draw_board_tiles_static()
 
-        if game.has_won():
+        renderer.update_and_draw_sprites()
+
+        # HUD
+        renderer.draw_score_and_hud()
+
+        if game.has_won() and not renderer.sprites:
             show_win = True
-            render.draw_center_message("You won!", "Press R to restart or Q to quit")
-
-        if not game.can_move():
+            renderer.draw_center_message("You won!", "Press R to restart or Q to quit")
+        if not game.can_move() and not renderer.sprites:
             show_game_over = True
-            render.draw_center_message("Game Over", "Press R to restart or Q to quit")
+            renderer.draw_center_message("Game Over", "Press R to restart or Q to quit")
 
         for event in pygame.event.get():
             if event.type == QUIT:
@@ -40,20 +44,28 @@ def main():
 
                 if event.key == K_r:
                     game.reset()
+                    renderer.sprites = []
                     show_game_over = False
                     show_win = False
 
-                # Only accept moves if game not over or won
-                if not show_game_over and not show_win:
+                if not renderer.sprites and not show_game_over and not show_win:
                     if event.key in KEY_TO_MOVE:
                         move = KEY_TO_MOVE[event.key]
-                        # translate 'u','d','l','r' used in logic to same as gamespace:
-                        move_map = {'u': 'u', 'd': 'd', 'l': 'l', 'r': 'r'}
-                        moved = game.make_move(move_map[move])
+                        moved, gained, movements = game.move_and_get_changes(move)
                         if moved:
-                            game.new_number(k=1)
+                            renderer.create_sprites_from_movements(movements)
+                        else:
+                            pass
 
-        render.update()
+        if not hasattr(main, "_prior_sprites_count"):
+            main._prior_sprites_count = 0
+        if main._prior_sprites_count > 0 and len(renderer.sprites) == 0:
+            # sprites just finished: spawn a new tile if any empty space
+            if any(game.grid.flatten() == 0):
+                game.new_number(k=1)
+        main._prior_sprites_count = len(renderer.sprites)
+
+        renderer.update()
 
     pygame.quit()
 
